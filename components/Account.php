@@ -123,19 +123,25 @@ class Account extends ComponentBase
         if ($validation->fails()) {
             throw new ValidationException($validation);
         }
+        try {
+            /*
+             * Authenticate user
+             */
+            $credentials = [
+                'login'    => array_get($data, 'login'),
+                'password' => array_get($data, 'password')
+            ];
 
-        /*
-         * Authenticate user
-         */
-        $credentials = [
-            'login'    => array_get($data, 'login'),
-            'password' => array_get($data, 'password')
-        ];
+            Event::fire('rainlab.user.beforeAuthenticate', [$this, $credentials]);
 
-        Event::fire('rainlab.user.beforeAuthenticate', [$this, $credentials]);
-
-        $user = Auth::authenticate($credentials, true);
-
+            $user = Auth::authenticate($credentials, true);
+        }
+        catch (Exception $ex) {
+            $flash_message = $ex->getMessage();
+            if ($flash_message) {
+                return ['msgs' =>  [ 'danger' => $flash_message ], 'options' => [], 'settings' => [] ];
+            }
+        }
         /*
          * Redirect to the intended page after successful sign in
          */
